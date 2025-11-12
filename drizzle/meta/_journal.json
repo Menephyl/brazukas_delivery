@@ -1,0 +1,48 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1762032423897,
+      "tag": "0000_odd_skullbuster",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1762113993371,
+      "tag": "0001_far_ender_wiggin",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1762116685459,
+      "tag": "0002_perfect_sunset_bain",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1762118504270,
+      "tag": "0003_supreme_deadpool",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1762118601946,
+      "tag": "0004_boring_apocalypse",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1762132067685,
+      "tag": "0005_wooden_reavers",
+      "breakpoints": true
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+# Brazukas Delivery - robots.txt
+# Arquivo de configuração para bots de busca
+
+# Permitir todos os bots
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /driver/
+Disallow: /merchant/
+Disallow: /*.json$
+Disallow: /api/
+Disallow: /checkout
+Disallow: /order/
+Disallow: /history
+Disallow: /coupons
+
+# Google
+User-agent: Googlebot
+Allow: /
+Disallow: /admin/
+Disallow: /driver/
+Disallow: /merchant/
+Disallow: /api/
+
+# Bing
+User-agent: Bingbot
+Allow: /
+Disallow: /admin/
+Disallow: /driver/
+Disallow: /merchant/
+Disallow: /api/
+
+# Sitemap
+Sitemap: https://brazukasdelivery.com/sitemap.xml
+
+# Crawl delay
+Crawl-delay: 1
+
+# Request rate
+Request-rate: 1/1s
