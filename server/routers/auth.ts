@@ -1,17 +1,19 @@
 /**
  * Brazukas Delivery - Auth Router
- * Autenticação JWT mock para desenvolvimento
+ * Autenticação simples com JWT local
  */
 
 import { publicProcedure, router } from "../_core/trpc";
 import { z } from "zod";
-import { sign, verify, extractToken } from "../auth";
-import { COOKIE_NAME } from "@shared/const";
+import { sign } from "../auth";
+import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { ENV } from "../_core/env";
+import * as db from "../db";
+import { getSessionCookieOptions } from "../_core/cookies";
 
 export const authRouter = router({
   /**
-   * Login com email e senha (mock)
+   * Login com email e senha (simples)
    */
   login: publicProcedure
     .input(
@@ -21,29 +23,39 @@ export const authRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // Mock: admin único para desenvolvimento
+      // Mock: admin para desenvolvimento
       if (
         input.email === "admin@brazukas.app" &&
         input.password === "brazukas2025"
       ) {
-        const token = await sign({
-          sub: "admin",
-          role: "admin",
+        // Criar ou atualizar usuário no DB
+        const openId = "admin-dev";
+        await db.upsertUser({
+          openId,
+          name: "Admin User",
           email: input.email,
+          loginMethod: "local",
+          role: "admin",
         });
 
-        // set cookie HTTP-only so client requests (credentials: 'include') will send it
+        // Gerar token
+        const token = await sign({
+          openId,
+          role: "admin",
+          email: input.email,
+          name: "Admin User",
+        });
+
+        // Set cookie HTTP-only
         try {
           const maxAge = 7 * 24 * 3600 * 1000; // 7 days
-          const secure = !!ENV.isProduction;
+          const cookieOptions = getSessionCookieOptions(ctx.req);
           ctx.res?.cookie(COOKIE_NAME, token, {
-            httpOnly: true,
+            ...cookieOptions,
             maxAge,
-            sameSite: "lax",
-            secure,
           });
         } catch (e) {
-          // ignore cookie set errors; token is still returned
+          // ignore cookie set errors
         }
 
         return { token, success: true };
@@ -53,35 +65,17 @@ export const authRouter = router({
     }),
 
   /**
-   * Verifica o token atual
+   * Obter usuário autenticado
    */
-  me: publicProcedure
-    .input(z.object({ token: z.string().optional() }))
-    .query(async ({ input, ctx }) => {
-      // Prefer context user (set by server/_core/context.ts via sdk.authenticateRequest)
-      // This covers the cookie-based session flow.
-      if (ctx && (ctx as any).user) {
-        return (ctx as any).user;
-      }
-
-      let token: string | null = input.token || null;
-
-      // Se não fornecido no input, tenta extrair do header
-      if (!token && ctx.req) {
-        const auth = ctx.req.headers.authorization;
-        token = auth ? extractToken(auth) : null;
-      }
-
-      if (!token) {
-        return null;
-      }
-
-      const claims = await verify(token);
-      return claims || null;
-    }),
+  me: publicProcedure.query(async ({ ctx }) => {
+    if ((ctx as any).user) {
+      return (ctx as any).user;
+    }
+    return null;
+  }),
 
   /**
-   * Logout (apenas remove token no cliente)
+   * Logout
    */
   logout: publicProcedure.mutation(({ ctx }) => {
     try {
