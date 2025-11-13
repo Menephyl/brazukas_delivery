@@ -42,10 +42,8 @@ export function useAuth(options?: UseAuthOptions) {
   }, [logoutMutation, utils]);
 
   const state = useMemo(() => {
-    localStorage.setItem(
-      "manus-runtime-user-info",
-      JSON.stringify(meQuery.data)
-    );
+    // NOTE: side-effects (localStorage) are done in a useEffect below to avoid
+    // running them inside useMemo (and to guard against SSR / missing `window`).
     return {
       user: meQuery.data ?? null,
       loading: meQuery.isLoading || logoutMutation.isPending,
@@ -59,6 +57,25 @@ export function useAuth(options?: UseAuthOptions) {
     logoutMutation.error,
     logoutMutation.isPending,
   ]);
+
+  // Persist user info to localStorage safely (only on client).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      if (meQuery.data) {
+        localStorage.setItem(
+          "manus-runtime-user-info",
+          JSON.stringify(meQuery.data)
+        );
+      } else {
+        localStorage.removeItem("manus-runtime-user-info");
+      }
+    } catch (e) {
+      // swallow localStorage errors (e.g., quota, privacy mode) but log for debugging
+      // eslint-disable-next-line no-console
+      console.warn("useAuth: could not persist user info to localStorage", e);
+    }
+  }, [meQuery.data]);
 
   useEffect(() => {
     if (!redirectOnUnauthenticated) return;
