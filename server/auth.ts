@@ -1,37 +1,30 @@
 /**
  * Brazukas Delivery - JWT Authentication
- * Mock para desenvolvimento, será substituído por Manus Auth em produção
+ * Wrapper around server/_core/jwt.ts for backward compatibility.
+ * Uses jose for consistency with sdk.ts implementation.
  */
 
-import * as jwt from "jsonwebtoken";
+import { issueToken, verifyToken } from "./_core/jwt";
+export type { JWTPayload } from "./_core/jwt";
 
-const SECRET = process.env.JWT_SECRET || "dev_brazukas_secret_change_me";
-const EXPIRES_IN = "2d";
-
-export interface JWTPayload {
-  sub: string;
-  role: "admin" | "merchant" | "driver" | "client";
-  email: string;
-  iat?: number;
-  exp?: number;
+/**
+ * Assina um JWT (uses jose library via _core/jwt.ts).
+ * Note: This now returns a Promise. Callers should await.
+ */
+export async function sign(
+  payload: Record<string, any>,
+  expiresIn: string = "7d"
+): Promise<string> {
+  return issueToken(payload, expiresIn);
 }
 
 /**
- * Assina um JWT
+ * Verifica um JWT (returns Promise for consistency with async jose verification).
  */
-export function sign(payload: Omit<JWTPayload, "iat" | "exp">): string {
-  return jwt.sign(payload, SECRET, { expiresIn: EXPIRES_IN });
-}
-
-/**
- * Verifica um JWT
- */
-export function verify(token: string): JWTPayload | null {
-  try {
-    return jwt.verify(token, SECRET) as JWTPayload;
-  } catch {
-    return null;
-  }
+export async function verify(
+  token: string
+): Promise<Record<string, any> | null> {
+  return verifyToken(token);
 }
 
 /**

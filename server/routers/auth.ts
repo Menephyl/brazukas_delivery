@@ -20,13 +20,13 @@ export const authRouter = router({
         password: z.string().min(6),
       })
     )
-  .mutation(({ input, ctx }) => {
+    .mutation(async ({ input, ctx }) => {
       // Mock: admin único para desenvolvimento
       if (
         input.email === "admin@brazukas.app" &&
         input.password === "brazukas2025"
       ) {
-        const token = sign({
+        const token = await sign({
           sub: "admin",
           role: "admin",
           email: input.email,
@@ -57,7 +57,7 @@ export const authRouter = router({
    */
   me: publicProcedure
     .input(z.object({ token: z.string().optional() }))
-    .query(({ input, ctx }) => {
+    .query(async ({ input, ctx }) => {
       // Prefer context user (set by server/_core/context.ts via sdk.authenticateRequest)
       // This covers the cookie-based session flow.
       if (ctx && (ctx as any).user) {
@@ -76,7 +76,7 @@ export const authRouter = router({
         return null;
       }
 
-      const claims = verify(token);
+      const claims = await verify(token);
       return claims || null;
     }),
 
