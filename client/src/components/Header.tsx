@@ -1,9 +1,10 @@
-import { APP_LOGO, APP_TITLE } from "@/const";
+import { APP_TITLE } from "@/const";
 import { ShoppingCart } from "lucide-react";
 import { Link } from "wouter";
 import { getCartItemCount } from "@/lib/cart";
 import { useEffect, useState } from "react";
 import NotificationCenter from "./NotificationCenter";
+import logo from "@/assets/logo.jpg"; // Importando a logo .jpg diretamente
 
 export default function Header() {
   const [cartCount, setCartCount] = useState(0);
@@ -21,7 +22,7 @@ export default function Header() {
       <div className="container flex h-16 items-center justify-between">
         {/* Logo e título */}
         <Link href="/" className="flex items-center gap-2">
-          <img src={APP_LOGO} alt={APP_TITLE} className="h-8 w-8 rounded" />
+          <img src={logo} alt={APP_TITLE} className="h-10 w-auto" />
           <span className="hidden font-bold text-lg sm:inline">{APP_TITLE}</span>
         </Link>
 
