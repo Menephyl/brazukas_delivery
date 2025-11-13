@@ -260,6 +260,12 @@ class SDKServer {
     // Regular authentication flow
     const cookies = this.parseCookies(req.headers.cookie);
     const sessionCookie = cookies.get(COOKIE_NAME);
+    
+    // If OAuth is not configured, use local JWT verification as fallback
+    if (!ENV.oAuthServerUrl) {
+      return this.authenticateRequestWithLocalJwt(sessionCookie, req);
+    }
+
     const session = await this.verifySession(sessionCookie);
 
     if (!session) {
@@ -298,6 +304,64 @@ class SDKServer {
     });
 
     return user;
+  }
+
+  /**
+   * Fallback authentication using local JWT when OAuth is not configured.
+   * Used in development or when OAUTH_SERVER_URL is not set.
+   */
+  private async authenticateRequestWithLocalJwt(
+    sessionCookie: string | undefined,
+    req: Request
+  ): Promise<User> {
+    if (!sessionCookie) {
+      throw ForbiddenError("No session cookie provided");
+    }
+
+    try {
+      const secretKey = this.getSessionSecret();
+      const { payload } = await jwtVerify(sessionCookie, secretKey, {
+        algorithms: ["HS256"],
+      });
+
+      const openId = payload.openId || payload.sub;
+      if (!isNonEmptyString(openId)) {
+        throw ForbiddenError("Invalid session: missing openId");
+      }
+
+      const signedInAt = new Date();
+      let user = await db.getUserByOpenId(openId);
+
+      // If user not in DB, create a minimal user entry (for local development)
+      if (!user) {
+        await db.upsertUser({
+          openId,
+          name: (payload.name as string) || openId,
+          email: (payload.email as string) || null,
+          loginMethod: "local",
+          lastSignedIn: signedInAt,
+        });
+        user = await db.getUserByOpenId(openId);
+      }
+
+      if (!user) {
+        throw ForbiddenError("User not found after sync");
+      }
+
+      // Update last signed in
+      await db.upsertUser({
+        openId: user.openId,
+        lastSignedIn: signedInAt,
+      });
+
+      return user;
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("ForbiddenError")) {
+        throw error;
+      }
+      console.warn("[Auth] Local JWT verification failed:", String(error));
+      throw ForbiddenError("Invalid session token");
+    }
   }
 }
 
