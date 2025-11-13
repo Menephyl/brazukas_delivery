@@ -1,6 +1,7 @@
 import { mysqlTable, varchar, serial, timestamp, text, mysqlEnum, int, boolean, json, float } from 'drizzle-orm/mysql-core';
 
-export const users = mysqlTable('users', { // Tabela de Usuários
+// Tabela de Usuários (já definida na Parte 1, mas incluída aqui para completude)
+export const users = mysqlTable('users', {
   id: serial('id').primaryKey(),
   openId: varchar('openId', { length: 255 }).unique().notNull(),
   name: varchar('name', { length: 255 }),
@@ -13,24 +14,15 @@ export const users = mysqlTable('users', { // Tabela de Usuários
   updatedAt: timestamp('updatedAt').onUpdateNow(),
 });
 
-export type User = typeof users.$inferSelect;
-export type InsertUser = typeof users.$inferInsert;
-
 // Tabela de Lojistas (Merchants)
 export const merchants = mysqlTable('merchants', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 255 }).notNull(),
-  email: varchar('email', { length: 255 }).unique(),
-  phone: varchar('phone', { length: 20 }),
-  cnpj: varchar('cnpj', { length: 14 }).unique(),
-  description: text('description'),
   address: text('address'),
   lat: float('lat'),
   lng: float('lng'),
   category: varchar('category', { length: 100 }),
   deliveryFee: int('delivery_fee'),
-  deliveryRadius: int('delivery_radius'), // in km
-  minOrderValue: int('min_order_value'), // in cents
   logoUrl: varchar('logo_url', { length: 2048 }),
   bannerUrl: varchar('banner_url', { length: 2048 }),
   active: boolean('active').default(true),
@@ -39,8 +31,6 @@ export const merchants = mysqlTable('merchants', {
   updatedAt: timestamp('updatedAt').onUpdateNow(),
 });
 
-export type Merchant = typeof merchants.$inferSelect;
-
 // Tabela de Produtos
 export const products = mysqlTable('products', {
   id: serial('id').primaryKey(),
@@ -48,15 +38,11 @@ export const products = mysqlTable('products', {
   name: varchar('name', { length: 255 }).notNull(),
   description: text('description'),
   price: int('price').notNull(), // Em centavos
-  category: varchar('category', { length: 100 }),
-  preparationTime: int('preparation_time'), // in minutes
   photoUrl: varchar('photo_url', { length: 2048 }),
   active: boolean('active').default(true),
   createdAt: timestamp('createdAt').defaultNow(),
   updatedAt: timestamp('updatedAt').onUpdateNow(),
 });
-
-export type MerchantProduct = typeof products.$inferSelect;
 
 // Tabela de Pedidos (Orders)
 export const orders = mysqlTable('orders', {
@@ -65,7 +51,13 @@ export const orders = mysqlTable('orders', {
   clientId: int('client_id').notNull().references(() => users.id),
   driverId: int('driver_id').references(() => users.id),
   status: mysqlEnum('status', [
-    'PENDING_PAYMENT', 'CONFIRMED', 'PREPARING', 'READY_FOR_PICKUP', 'PICKED_UP', 'DELIVERED', 'CANCELLED',
+    'PENDING_PAYMENT',
+    'CONFIRMED',
+    'PREPARING',
+    'READY_FOR_PICKUP',
+    'PICKED_UP',
+    'DELIVERED',
+    'CANCELLED',
   ]).notNull(),
   items: json('items').notNull(),
   subtotal: int('subtotal'),

@@ -7,14 +7,14 @@ import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "../db";
-import { merchants, merchantProducts, Merchant, MerchantProduct } from "../../drizzle/schema";
+import { merchants, products as merchantProducts, Merchant, MerchantProduct } from "../../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 
 export const merchantsRouter = router({
   /**
    * Criar nova loja (signup)
    */
-  signup: publicProcedure
+  signup: protectedProcedure // Alterado para protected, pois precisa de um usuário logado para ser o dono
     .input(
       z.object({
         name: z.string().min(3).max(255),
@@ -48,7 +48,7 @@ export const merchantsRouter = router({
 
         // Criar merchant
         const result = await db.insert(merchants).values({
-          userId: ctx.user?.id || 0,
+          ownerId: ctx.user.id, // ctx.user está disponível por ser protectedProcedure
           name: input.name,
           email: input.email,
           phone: input.phone,
@@ -56,8 +56,8 @@ export const merchantsRouter = router({
           cnpj: input.cnpj,
           description: input.description,
           category: input.category,
-          logo: input.logo,
-          isActive: true,
+          logoUrl: input.logo, // Corrigido: 'logo' para 'logoUrl'
+          active: true, // Corrigido: 'isActive' para 'active'
         });
 
         return {
@@ -133,6 +133,7 @@ export const merchantsRouter = router({
         await db
           .update(merchants)
           .set({
+            logoUrl: updates.logo, // Corrigido: 'logo' para 'logoUrl'
             ...updates,
             updatedAt: new Date(),
           })
@@ -207,11 +208,10 @@ export const merchantsRouter = router({
           merchantId: input.merchantId,
           name: input.name,
           price: Math.round(input.price * 100), // Convert to cents
-          description: input.description,
-          image: input.image,
+          description: input.description || null,
+          photoUrl: input.image,
           category: input.category,
           preparationTime: input.preparationTime,
-          isAvailable: true,
         });
 
         return {
@@ -251,6 +251,8 @@ export const merchantsRouter = router({
 
         const updateData: any = {
           ...updates,
+          photoUrl: updates.image, // Corrigido: 'image' para 'photoUrl'
+          active: updates.isAvailable,
           updatedAt: new Date(),
         };
 

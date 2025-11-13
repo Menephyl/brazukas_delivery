@@ -20,8 +20,10 @@ OAUTH_SERVER_URL=
 # JWT Secret (usar comando abaixo para gerar seguro)
 JWT_SECRET=your-secret-key-here
 
-# Outras variáveis
+# Configuração do Banco de Dados
 DATABASE_URL=mysql://user:password@localhost:3306/brazukas_delivery
+
+# Configuração do App ID (para Manus, se usado)
 VITE_APP_ID=dev-app-id
 ```
 
@@ -234,4 +236,3 @@ Solução:
 - [JWT.io](https://jwt.io) - Validar tokens
 - [Manus Docs](https://docs.manus.im) - Documentação OAuth
 - [OWASP - Auth](https://owasp.org/www-community/authentication) - Boas práticas
-

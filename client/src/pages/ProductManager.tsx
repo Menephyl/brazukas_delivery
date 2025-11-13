@@ -6,19 +6,20 @@
 import { useEffect, useState } from "react";
 import { useRoute } from "wouter";
 import MerchantLayout from "@/components/MerchantLayout";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Edit2, Trash2, Search } from "lucide-react";
+import { Plus, Edit2, Trash2, Search, Loader2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 
 interface Product {
   id: number;
   name: string;
   price: number;
-  category: string;
-  isAvailable: boolean;
-  image?: string;
+  category: string | null;
+  active: boolean;
+  photoUrl?: string | null;
   preparationTime: number;
 }
 
@@ -36,6 +37,7 @@ export default function ProductManager() {
     category: "",
     preparationTime: "15",
     description: "",
+    image: "", // Adicionado para o campo de imagem
   });
 
   const { data: productsData } = trpc.merchants.listProducts.useQuery(
@@ -44,6 +46,9 @@ export default function ProductManager() {
   );
   const createProductMutation = trpc.merchants.createProduct.useMutation();
   const deleteProductMutation = trpc.merchants.deleteProduct.useMutation();
+
+  // tRPC Utils para invalidar cache
+  const utils = trpc.useUtils();
 
   useEffect(() => {
     if (productsData) {
@@ -66,20 +71,16 @@ export default function ProductManager() {
         category: formData.category,
         preparationTime: parseInt(formData.preparationTime),
         description: formData.description,
+        image: formData.image, // Passando a URL da imagem
       });
 
-      setFormData({ name: "", price: "", category: "", preparationTime: "15", description: "" });
+      toast.success("Produto adicionado com sucesso!");
+      setFormData({ name: "", price: "", category: "", preparationTime: "15", description: "", image: "" });
       setShowForm(false);
-      // Refresh products - add new product to list
-      const newProduct: Product = {
-        id: Math.random(),
-        name: formData.name,
-        price: parseFloat(formData.price) * 100,
-        category: formData.category,
-        isAvailable: true,
-        preparationTime: parseInt(formData.preparationTime),
-      };
-      setProducts([...products, newProduct]);
+
+      // Invalida a query de produtos para forçar o refetch com os dados atualizados
+      await utils.merchants.listProducts.invalidate({ merchantId });
+
     } catch (error) {
       console.error(error);
       alert("Erro ao adicionar produto");
@@ -91,7 +92,9 @@ export default function ProductManager() {
 
     try {
       await deleteProductMutation.mutateAsync({ productId });
-      setProducts(products.filter((p) => p.id !== productId));
+      toast.success("Produto deletado com sucesso!");
+      // Invalida a query para remover o produto da lista
+      await utils.merchants.listProducts.invalidate({ merchantId });
     } catch (error) {
       console.error(error);
       alert("Erro ao deletar produto");
@@ -121,51 +124,61 @@ export default function ProductManager() {
 
         {/* Add Product Form */}
         {showForm && (
-          <Card className="p-6">
-            <h2 className="text-xl font-bold mb-4">Adicionar Novo Produto</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                placeholder="Nome do produto"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
-              <Input
-                placeholder="Preço (R$)"
-                type="number"
-                step="0.01"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-              />
-              <Input
-                placeholder="Categoria"
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              />
-              <Input
-                placeholder="Tempo de preparo (min)"
-                type="number"
-                value={formData.preparationTime}
-                onChange={(e) => setFormData({ ...formData, preparationTime: e.target.value })}
-              />
-              <Input
-                placeholder="Descrição"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="md:col-span-2"
-              />
-              <div className="flex gap-2 md:col-span-2">
-                <Button onClick={handleAddProduct} className="flex-1">
-                  Salvar Produto
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowForm(false)}
-                  className="flex-1"
-                >
-                  Cancelar
-                </Button>
+          <Card>
+            <CardHeader>
+              <CardTitle>Adicionar Novo Produto</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  placeholder="Nome do produto"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                />
+                <Input
+                  placeholder="Preço (R$)"
+                  type="number"
+                  step="0.01"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                />
+                <Input
+                  placeholder="Categoria"
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                />
+                <Input
+                  placeholder="Tempo de preparo (min)"
+                  type="number"
+                  value={formData.preparationTime}
+                  onChange={(e) => setFormData({ ...formData, preparationTime: e.target.value })}
+                />
+                <Input
+                  placeholder="Descrição"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="md:col-span-2"
+                />
+                <Input
+                  placeholder="URL da Imagem (opcional)"
+                  value={formData.image}
+                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                  className="md:col-span-2"
+                />
+                <div className="flex gap-2 md:col-span-2">
+                  <Button onClick={handleAddProduct} className="flex-1" disabled={createProductMutation.isPending}>
+                    {createProductMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Salvar Produto"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowForm(false)}
+                    className="flex-1"
+                  >
+                    Cancelar
+                  </Button>
+                </div>
               </div>
-            </div>
+            </CardContent>
           </Card>
         )}
 
@@ -192,9 +205,9 @@ export default function ProductManager() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredProducts.map((product) => (
               <Card key={product.id} className="p-4 hover:shadow-lg transition-shadow">
-                {product.image && (
+                {product.photoUrl && (
                   <img
-                    src={product.image}
+                    src={product.photoUrl}
                     alt={product.name}
                     className="w-full h-40 object-cover rounded-lg mb-3"
                   />
@@ -216,19 +229,20 @@ export default function ProductManager() {
                       <button
                         onClick={() => handleDeleteProduct(product.id)}
                         className="p-2 hover:bg-red-100 rounded-lg text-red-600"
+                        disabled={deleteProductMutation.isPending && deleteProductMutation.variables?.productId === product.id}
                       >
-                        <Trash2 className="w-4 h-4" />
+                        {deleteProductMutation.isPending && deleteProductMutation.variables?.productId === product.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 pt-2">
                     <div
                       className={`w-2 h-2 rounded-full ${
-                        product.isAvailable ? "bg-green-600" : "bg-red-600"
+                        product.active ? "bg-green-600" : "bg-red-600"
                       }`}
                     />
                     <span className="text-sm">
-                      {product.isAvailable ? "Disponível" : "Indisponível"}
+                      {product.active ? "Disponível" : "Indisponível"}
                     </span>
                   </div>
                 </div>

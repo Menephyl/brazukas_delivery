@@ -11,10 +11,27 @@ O sistema de autenticação foi configurado com suporte a:
 ### 1. Login
 
 ```bash
-# Via curl
+# 1. Registrar um novo usuário (signup)
+curl -X POST http://localhost:3000/api/trpc/auth.signup \
+  -H 'Content-Type: application/json' \
+  -d '{"input":{"name":"Test User","email":"test@brazukas.app","password":"securepassword"}}'
+
+# Resposta esperada (sucesso)
+{
+  "result": {
+    "data": {
+      "json": {
+        "success": true,
+        "message": "Usuário criado com sucesso."
+      }
+    }
+  }
+}
+
+# 2. Fazer login com o usuário registrado
 curl -X POST http://localhost:3000/api/trpc/auth.login \
   -H 'Content-Type: application/json' \
-  -d '{"input":{"email":"admin@brazukas.app","password":"brazukas2025"}}'
+  -d '{"input":{"email":"test@brazukas.app","password":"securepassword"}}'
 
 # Resposta esperada
 {
@@ -184,4 +201,3 @@ Credenciais padrão em desenvolvimento:
 - `client/src/_core/hooks/useAuth.ts` - Hook React
 - `server/_core/context.ts` - Contexto tRPC com usuário
 - `.env.local` - Variáveis de ambiente
-
