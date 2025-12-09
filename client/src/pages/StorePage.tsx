@@ -6,8 +6,9 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import CartBar from "@/components/CartBar";
-import { ArrowLeft, Star, Clock, MapPin } from "lucide-react";
+import { ArrowLeft, Star, Clock, MapPin, SlidersHorizontal } from "lucide-react";
 import { Link } from "wouter";
+import { ComingSoonModal } from "@/components/ComingSoonModal";
 
 export default function StorePage() {
   const [, params] = useRoute("/store/:id");
@@ -16,6 +17,7 @@ export default function StorePage() {
   const [merchant, setMerchant] = useState<Merchant | null | undefined>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     if (!merchantId) return;
@@ -123,7 +125,16 @@ export default function StorePage() {
 
           {/* Produtos */}
           <div>
-            <h2 className="text-2xl font-bold mb-6">Cardápio</h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold">Cardápio</h2>
+              <button
+                onClick={() => setModalOpen(true)}
+                className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                Filtros e Categorias
+              </button>
+            </div>
 
             {products.length > 0 ? (
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 pb-24">
@@ -143,9 +154,15 @@ export default function StorePage() {
               </div>
             ) : (
               <div className="rounded-2xl border border-dashed border-border p-12 text-center">
-                <p className="text-muted-foreground">
+                <p className="text-muted-foreground mb-4">
                   Nenhum produto disponível no momento
                 </p>
+                <button
+                  onClick={() => setModalOpen(true)}
+                  className="text-sm font-medium text-primary hover:underline"
+                >
+                  Solicitar Cardápio
+                </button>
               </div>
             )}
           </div>
@@ -154,6 +171,12 @@ export default function StorePage() {
 
       <CartBar />
       <Footer />
+      <ComingSoonModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        title="Filtros e Categorias"
+        description="Em breve você poderá filtrar por categorias, preço e dietas específicas."
+      />
     </div>
   );
 }

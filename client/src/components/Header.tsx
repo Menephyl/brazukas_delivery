@@ -4,9 +4,14 @@ import { Link } from "wouter";
 import { getCartItemCount } from "@/lib/cart";
 import { useEffect, useState } from "react";
 import NotificationCenter from "./NotificationCenter";
+import { useAuth } from "@/contexts/AuthContext";
+import { ComingSoonModal } from "./ComingSoonModal";
 
 export default function Header() {
+  const { user, signOut } = useAuth();
   const [cartCount, setCartCount] = useState(0);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalTitle, setModalTitle] = useState("");
 
   useEffect(() => {
     // Atualiza contagem do carrinho a cada 500ms
@@ -15,6 +20,11 @@ export default function Header() {
     }, 500);
     return () => clearInterval(interval);
   }, []);
+
+  const openModal = (title: string) => {
+    setModalTitle(title);
+    setModalOpen(true);
+  };
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -30,12 +40,19 @@ export default function Header() {
           <Link href="/" className="text-sm font-medium hover:text-primary transition-colors">
             Lojas
           </Link>
-          <Link href="/history" className="text-sm font-medium hover:text-primary transition-colors">
-            Histórico
-          </Link>
-          <Link href="/coupons" className="text-sm font-medium hover:text-primary transition-colors">
-            Cupóns
-          </Link>
+          <button
+            onClick={() => openModal("Área do Parceiro")}
+            className="text-sm font-medium hover:text-primary transition-colors"
+          >
+            Sou Parceiro
+          </button>
+          <button
+            onClick={() => openModal("Área do Entregador")}
+            className="text-sm font-medium hover:text-primary transition-colors"
+          >
+            Sou Entregador
+          </button>
+
           <NotificationCenter />
           <Link href="/checkout" className="relative">
             <button className="relative inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity">
@@ -48,8 +65,39 @@ export default function Header() {
               )}
             </button>
           </Link>
+
+          {user ? (
+            <div className="flex items-center gap-4">
+              <div className="flex flex-col items-end">
+                <span className="text-sm font-medium">
+                  Hello, {user.user_metadata?.full_name?.split(' ')[0] || "Usuário"}
+                </span>
+              </div>
+              <button
+                onClick={() => signOut()}
+                className="text-sm font-medium text-red-500 hover:text-red-600 transition-colors"
+              >
+                Sair
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Link href="/login" className="text-sm font-medium hover:text-primary transition-colors">
+                Entrar
+              </Link>
+              <Link href="/register" className="hidden sm:inline-flex rounded-md bg-primary/10 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/20 transition-colors">
+                Cadastrar
+              </Link>
+            </div>
+          )}
         </nav>
       </div>
+
+      <ComingSoonModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        title={modalTitle}
+      />
     </header>
   );
 }

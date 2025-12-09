@@ -1,7 +1,17 @@
 import { Heart } from "lucide-react";
+import { useState } from "react";
+import { ComingSoonModal } from "./ComingSoonModal";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalTitle, setModalTitle] = useState("");
+
+  const handleLinkClick = (e: React.MouseEvent, title: string) => {
+    e.preventDefault();
+    setModalTitle(title);
+    setModalOpen(true);
+  };
 
   return (
     <footer className="border-t border-border bg-muted/30 py-8">
@@ -20,17 +30,17 @@ export default function Footer() {
             <h3 className="font-semibold mb-3">Links</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
-                <a href="#" className="hover:text-primary transition-colors">
+                <a href="#" onClick={(e) => handleLinkClick(e, "Sobre nós")} className="hover:text-primary transition-colors">
                   Sobre nós
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-primary transition-colors">
+                <a href="#" onClick={(e) => handleLinkClick(e, "Contato")} className="hover:text-primary transition-colors">
                   Contato
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-primary transition-colors">
+                <a href="#" onClick={(e) => handleLinkClick(e, "Termos de Uso")} className="hover:text-primary transition-colors">
                   Termos de Uso
                 </a>
               </li>
@@ -42,17 +52,17 @@ export default function Footer() {
             <h3 className="font-semibold mb-3">Redes Sociais</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
-                <a href="#" className="hover:text-primary transition-colors">
+                <a href="#" onClick={(e) => handleLinkClick(e, "Instagram")} className="hover:text-primary transition-colors">
                   Instagram
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-primary transition-colors">
+                <a href="#" onClick={(e) => handleLinkClick(e, "Facebook")} className="hover:text-primary transition-colors">
                   Facebook
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-primary transition-colors">
+                <a href="#" onClick={(e) => handleLinkClick(e, "WhatsApp")} className="hover:text-primary transition-colors">
                   WhatsApp
                 </a>
               </li>
@@ -68,6 +78,12 @@ export default function Footer() {
           <p className="mt-2">© {currentYear} Brazukas Delivery. Todos os direitos reservados.</p>
         </div>
       </div>
+
+      <ComingSoonModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        title={modalTitle}
+      />
     </footer>
   );
 }

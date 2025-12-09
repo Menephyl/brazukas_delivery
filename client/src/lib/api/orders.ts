@@ -3,8 +3,7 @@
  * Abstrai chamadas para mock ou Manus
  */
 
-import { USE_MOCK } from "../config";
-import { apiFetch } from "../http";
+import { supabase } from "../supabase";
 
 export interface ListOrdersParams {
   merchantId?: string;
@@ -24,115 +23,183 @@ export interface CreateOrderPayload {
  * Lista pedidos
  */
 export async function list(params: ListOrdersParams = {}) {
-  if (USE_MOCK) {
-    return apiFetch("/orders", { method: "GET" });
+  let query = supabase.from('orders').select('*');
+
+  if (params.merchantId) {
+    query = query.eq('restaurant_id', params.merchantId);
+  }
+  if (params.status) {
+    query = query.eq('status', params.status);
+  }
+  if (params.limit) {
+    query = query.limit(params.limit);
   }
 
-  const search = new URLSearchParams();
-  if (params.merchantId) search.set("merchantId", params.merchantId);
-  if (params.status) search.set("status", params.status);
-  if (params.limit) search.set("limit", String(params.limit));
-  if (params.cursor) search.set("cursor", params.cursor);
+  // Order by newest first by default
+  query = query.order('created_at', { ascending: false });
 
-  const qs = search.toString() ? `?${search.toString()}` : "";
-  const res = await apiFetch(`/orders${qs}`, { method: "GET" });
+  const { data, error } = await query;
 
-  return res.items || res;
+  if (error) {
+    console.error('Error fetching orders:', error);
+    return [];
+  }
+
+  return data.map((o: any) => ({
+    id: o.id,
+    merchantId: o.restaurant_id,
+    total: o.total,
+    status: o.status,
+    createdAt: o.created_at,
+    client: o.client_info || {}, // inference
+    items: [], // usually list doesn't return items unless eager loaded, kept empty for now or could fetch
+  }));
 }
 
 /**
  * Obtém um pedido por ID
  */
 export async function get(id: string) {
-  return apiFetch(`/orders/${id}`, { method: "GET" });
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*, order_items(*)') // Embed items
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    console.error('Error fetching order:', error);
+    return null;
+  }
+
+  return {
+    id: data.id,
+    merchantId: data.restaurant_id,
+    total: data.total,
+    status: data.status,
+    createdAt: data.created_at,
+    client: data.client_info || {},
+    items: data.order_items.map((i: any) => ({
+      id: i.product_id, // mapping back to UI expectation
+      nome: i.name,
+      preco: i.price,
+      qty: i.quantity,
+    })),
+    driver: data.driver_info, // assuming driver info is stored here or joined
+  };
 }
 
 /**
- * Cria um pedido a partir do carrinho
+ * Cria um pedido
  */
-export async function createMockFromCart(payload: CreateOrderPayload) {
-  if (USE_MOCK) {
-    return apiFetch("/orders", {
-      method: "POST",
-      body: {
-        items: payload.items,
-        total: payload.total,
-        merchantId: payload.merchantId,
-        client: payload.client,
-      },
-    });
+export async function createOrder(payload: CreateOrderPayload) {
+  // 1. Insert Order
+  const { data: order, error: orderError } = await supabase
+    .from('orders')
+    .insert({
+      restaurant_id: payload.merchantId,
+      total: payload.total,
+      status: 'pending', // Default status
+      // client_info: payload.client, // Assuming jsonb or similar if needed, or map fields
+      address: payload.client ? { street: payload.client.street, ref: payload.client.ref } : {},
+    })
+    .select()
+    .single();
+
+  if (orderError) {
+    console.error('Error creating order:', orderError);
+    throw orderError;
   }
 
-  // Converte para o payload da Manus
-  const manuPayload = {
-    merchant_id: String(payload.merchantId),
-    items: payload.items.map((i: any) => ({
-      product_id: i.id,
-      name: i.nome,
-      price: i.preco,
-      qty: i.qty,
-    })),
-    address: {
-      street: payload.client?.street || "",
-      ref: payload.client?.ref || "",
-    },
-    payment_method: "pix",
-  };
+  if (!order) {
+    throw new Error('Order creation failed');
+  }
 
-  return apiFetch("/orders", {
-    method: "POST",
-    body: manuPayload,
-  });
+  // 2. Insert Order Items
+  const itemsToInsert = payload.items.map((item: any) => ({
+    order_id: order.id,
+    product_id: item.id,
+    name: item.nome,
+    price: item.preco,
+    quantity: item.qty || 1, // Fallback qty
+  }));
+
+  const { error: itemsError } = await supabase
+    .from('order_items')
+    .insert(itemsToInsert);
+
+  if (itemsError) {
+    console.error('Error creating order items:', itemsError);
+    // Ideally we should rollback here, but Supabase-js doesn't support transactions client-side easily 
+    // without RPC. Start with this for now as per instructions "Refactor...".
+    throw itemsError;
+  }
+
+  return order;
 }
+
+// Alias for backward compatibility if needed
+export const createMockFromCart = createOrder;
 
 /**
  * Avança o status de um pedido
  */
 export async function advanceStatus(id: string, status: string) {
-  return apiFetch(`/orders/${id}`, {
-    method: "PATCH",
-    body: { status },
-  });
+  const { data, error } = await supabase
+    .from('orders')
+    .update({ status })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating order status:', error);
+    throw error;
+  }
+  return data;
 }
 
 /**
  * Atribui um entregador a um pedido
  */
 export async function assignDriver(id: string, driver: any) {
-  if (USE_MOCK) {
-    return apiFetch(`/orders/${id}`, {
-      method: "PATCH",
-      body: { action: "assign_driver", driver },
-    });
-  }
+  // Store driver info in a jsonb column 'driver_info' or specific columns
+  const driverData = {
+    id: driver.id,
+    name: driver.nome || driver.name,
+    vehicle: driver.veiculo || driver.vehicle,
+  };
 
-  // Normaliza nomes de campos (mock usa camelCase, Manus usa snake_case)
-  return apiFetch(`/orders/${id}`, {
-    method: "PATCH",
-    body: {
-      action: "assign_driver",
-      driver: {
-        id: driver.id,
-        name: driver.nome || driver.name,
-        vehicle: driver.veiculo || driver.vehicle,
-      },
-    },
-  });
+  const { data, error } = await supabase
+    .from('orders')
+    .update({
+      driver_id: driver.id,
+      driver_info: driverData // store snapshot or assume column
+    })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error assigning driver:', error);
+    throw error;
+  }
+  return data;
 }
 
 /**
  * Define o ETA de um pedido
  */
 export async function setETA(id: string, eta: number) {
-  if (USE_MOCK) {
-    return apiFetch(`/orders/${id}`, {
-      method: "PATCH",
-      body: { action: "set_eta", etaMin: eta },
-    });
-  }
+  const { data, error } = await supabase
+    .from('orders')
+    .update({ eta_min: eta })
+    .eq('id', id)
+    .select()
+    .single();
 
-  return apiFetch(`/orders/${id}`, {
-    method: "PATCH",
-    body: { action: "set_eta", eta_min: eta },
-  });
+  if (error) {
+    console.error('Error setting ETA:', error);
+    throw error;
+  }
+  return data;
 }

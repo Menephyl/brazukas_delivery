@@ -34,10 +34,9 @@ Este é o MVP (Minimum Viable Product) do Brazukas Delivery com todas as funcion
 - **Leaflet** - Maps
 
 ### Backend
-- **Express.js** - Web framework
+- **Supabase** - Database & Realtime (PostgreSQL)
+- **Express.js** - Legacy/Admin Backend
 - **tRPC** - RPC framework
-- **Drizzle ORM** - Database ORM
-- **MySQL/TiDB** - Database
 - **JWT** - Authentication
 
 ### Infraestrutura
@@ -49,7 +48,7 @@ Este é o MVP (Minimum Viable Product) do Brazukas Delivery com todas as funcion
 
 - Node.js 18+
 - pnpm 8+
-- MySQL 8+ ou TiDB
+- Conta no Supabase
 
 ## 🚀 Setup Local
 
@@ -68,44 +67,15 @@ pnpm install
 
 ### 3. Configurar Variáveis de Ambiente
 
-Crie um arquivo `.env.local`:
+Crie um arquivo `.env` ou `.env.local`:
 
 ```env
-# Database
-DATABASE_URL=mysql://user:password@localhost:3306/brazukas_delivery
-
-# Auth
-JWT_SECRET=your-secret-key-here
-VITE_APP_ID=your-manus-app-id
-OAUTH_SERVER_URL=https://api.manus.im
-VITE_OAUTH_PORTAL_URL=https://portal.manus.im
-
-# Owner
-OWNER_OPEN_ID=your-owner-id
-OWNER_NAME=Your Name
-
-# Branding
-VITE_APP_TITLE=Brazukas Delivery
-VITE_APP_LOGO=https://example.com/logo.png
-
-# APIs
-BUILT_IN_FORGE_API_URL=https://api.manus.im
-BUILT_IN_FORGE_API_KEY=your-api-key
-VITE_FRONTEND_FORGE_API_URL=https://api.manus.im
-VITE_FRONTEND_FORGE_API_KEY=your-frontend-key
-
-# Analytics
-VITE_ANALYTICS_ENDPOINT=https://analytics.example.com
-VITE_ANALYTICS_WEBSITE_ID=your-website-id
+# Supabase (Obrigatório)
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-### 4. Setup do Banco de Dados
-
-```bash
-pnpm db:push
-```
-
-### 5. Iniciar Desenvolvimento
+### 4. Iniciar Desenvolvimento
 
 ```bash
 pnpm dev
@@ -117,32 +87,17 @@ Acesse http://localhost:3000
 
 ```
 brazukas_delivery/
-├── client/                 # Frontend React
-│   ├── public/            # Assets estáticos
+├── client/                 # Frontend React (Vite)
 │   ├── src/
-│   │   ├── pages/         # Páginas (Home, Store, Checkout, etc)
-│   │   ├── components/    # Componentes reutilizáveis
-│   │   ├── hooks/         # Custom hooks
-│   │   ├── lib/           # Utilitários e helpers
-│   │   ├── contexts/      # React contexts
-│   │   └── App.tsx        # Router principal
-│   └── index.html
-├── server/                # Backend Express + tRPC
-│   ├── routers/          # tRPC routers
-│   │   ├── orders.ts     # Pedidos
-│   │   ├── coupons.ts    # Cupons
-│   │   ├── loyalty.ts    # Fidelidade
-│   │   ├── payment.ts    # Pagamentos
-│   │   ├── chat.ts       # Chat
+│   │   ├── lib/
+│   │   │   ├── api/       # Adaptadores de API (Supabase)
+│   │   │   ├── supabase.ts # Cliente Supabase
+│   │   │   └── ...
 │   │   └── ...
-│   ├── db.ts             # Database helpers
-│   ├── routers.ts        # Main router
-│   └── _core/            # Framework internals
-├── drizzle/              # Database schema & migrations
-│   └── schema.ts
-├── shared/               # Shared types & constants
-├── storage/              # S3 helpers
-├── userGuide.md          # User documentation
+│   └── ...
+├── server/                # Backend Legacy/Admin
+│   └── ...
+├── drizzle/              # Legacy Database schema
 ├── README.md             # This file
 ├── package.json
 └── tsconfig.json
