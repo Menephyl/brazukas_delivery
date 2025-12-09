@@ -7,6 +7,10 @@ import SearchBar from "@/components/SearchBar";
 import FilterPanel from "@/components/FilterPanel";
 import { MapPin, Zap, Filter } from "lucide-react";
 
+import { MobileHeader } from "@/components/mobile/MobileHeader";
+import { MobileNav } from "@/components/mobile/MobileNav";
+import { CategoryList } from "@/components/mobile/CategoryList";
+
 export default function Home() {
   const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [filteredMerchants, setFilteredMerchants] = useState<Merchant[]>([]);
@@ -31,28 +35,37 @@ export default function Home() {
   }, [searchQuery, merchants]);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col pb-16 md:pb-0">
+      <MobileHeader />
       <Header />
 
       <main className="flex-1">
-        {/* Hero Section */}
-        <section className="bg-gradient-to-br from-primary to-primary/80 py-12 sm:py-16">
+        {/* Mobile Welcome & Categories */}
+        <div className="md:hidden flex flex-col gap-2 pt-2">
+          <h1 className="px-4 text-xl font-bold text-foreground">
+            Olá. O que você vai pedir hoje?
+          </h1>
+          <CategoryList />
+        </div>
+
+        {/* Hero Section - Desktop Only */}
+        <section className="hidden md:block bg-gradient-to-br from-primary to-primary/80 py-12 sm:py-16">
           <div className="container">
             <div className="space-y-4">
-              <div className="inline-flex items-center gap-2 rounded-full bg-primary-foreground/20 px-4 py-2 text-sm font-medium text-primary-foreground">
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-sm font-medium text-white">
                 <Zap className="h-4 w-4" />
                 Novo em Ciudad del Este
               </div>
-              <h1 className="text-4xl sm:text-5xl font-bold text-primary-foreground">
+              <h1 className="text-4xl sm:text-5xl font-bold text-white">
                 O Delivery da Comunidade
               </h1>
-              <p className="text-lg text-primary-foreground/90 max-w-2xl">
+              <p className="text-lg text-white/90 max-w-2xl">
                 Peça dos melhores estabelecimentos de Ciudad del Este. Rápido, seguro e feito por brasileiros para brasileiros.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 pt-4">
                 <a
                   href="#lojas"
-                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-foreground px-6 py-3 font-semibold text-primary hover:opacity-90 transition-opacity"
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-white/20 px-6 py-3 font-semibold text-white hover:bg-white/30 transition-all backdrop-blur-sm"
                 >
                   <MapPin className="h-5 w-5" />
                   Ver Lojas
@@ -167,6 +180,7 @@ export default function Home() {
       </main>
 
       <Footer />
+      <MobileNav />
     </div>
   );
 }

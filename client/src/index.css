@@ -79,8 +79,9 @@
 }
 
 .dark {
-  --primary: #F4C542;
-  --primary-foreground: #006A3A;
+  /* User requested "Lighter Green" for dark mode instead of Gold */
+  --primary: #10B981; 
+  --primary-foreground: #003A1F;
   --sidebar-primary: #F4C542;
   --sidebar-primary-foreground: #006A3A;
   --background: oklch(0.141 0.005 285.823);

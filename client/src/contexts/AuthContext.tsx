@@ -23,23 +23,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        let mounted = true;
+
+        // Force stop loading after 3 seconds to prevent infinite spinner
+        const timeout = setTimeout(() => {
+            if (mounted) {
+                console.warn("Auth initialization timed out forcing app load");
+                setLoading(false);
+            }
+        }, 3000);
+
         // 1. Check active session on mount
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-            setUser(session?.user ?? null);
-            setLoading(false);
-        });
+        supabase.auth.getSession()
+            .then(({ data: { session } }) => {
+                if (mounted) {
+                    setSession(session);
+                    setUser(session?.user ?? null);
+                }
+            })
+            .catch((err) => {
+                console.error("Auth initialization error:", err);
+            })
+            .finally(() => {
+                if (mounted) {
+                    clearTimeout(timeout);
+                    setLoading(false);
+                }
+            });
 
         // 2. Listen for changes
         const {
             data: { subscription },
         } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session);
-            setUser(session?.user ?? null);
-            setLoading(false);
+            if (mounted) {
+                setSession(session);
+                setUser(session?.user ?? null);
+                // Also ensure loading is false when auth state changes (e.g. initial load)
+                setLoading(false);
+            }
         });
 
-        return () => subscription.unsubscribe();
+        return () => {
+            mounted = false;
+            clearTimeout(timeout);
+            subscription.unsubscribe();
+        };
     }, []);
 
     const signOut = async () => {
@@ -48,7 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return (
         <AuthContext.Provider value={{ session, user, loading, signOut }}>
-            {!loading && children}
+            {children}
         </AuthContext.Provider>
     );
 }
