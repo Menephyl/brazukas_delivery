@@ -182,6 +182,9 @@
 
 /* Performance Optimizations */
 @layer utilities {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
   /* Lazy loading images */
   img[loading="lazy"] {
     will-change: opacity;
