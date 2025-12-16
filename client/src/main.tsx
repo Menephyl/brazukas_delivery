@@ -6,9 +6,15 @@ import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
 import { getLoginUrl } from "./const";
+import { API_BASE_URL, USE_MOCK } from "@/lib/config";
 import "./index.css";
 
 const queryClient = new QueryClient();
+
+function getApiBaseUrl() {
+  if (USE_MOCK) return ""; // Proxy handles it locally
+  return API_BASE_URL; // Can be empty (relative) or absolute URL
+}
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (!(error instanceof TRPCClientError)) return;
@@ -40,7 +46,7 @@ queryClient.getMutationCache().subscribe(event => {
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
-      url: "/api/trpc",
+      url: `${getApiBaseUrl()}/api/trpc`,
       transformer: superjson,
       fetch(input, init) {
         return globalThis.fetch(input, {

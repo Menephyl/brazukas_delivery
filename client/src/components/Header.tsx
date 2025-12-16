@@ -1,6 +1,6 @@
 
 import { APP_LOGO, APP_TITLE } from "@/const";
-import { ShoppingCart, Sun, Moon, LogOut } from "lucide-react";
+import { ShoppingCart, Sun, Moon, LogOut, Search, User, ChevronDown } from "lucide-react";
 import { Link } from "wouter";
 import { getCartItemCount } from "@/lib/cart";
 import { useEffect, useState } from "react";
@@ -19,7 +19,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function Header() {
   const { user, signOut } = useAuth();
@@ -46,46 +45,59 @@ export default function Header() {
   };
 
   return (
-    <header className="hidden md:block sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center flex-1 gap-4">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 flex-shrink-0">
-          <img src={APP_LOGO} alt={APP_TITLE} className="h-8 w-8 rounded" />
-          <span className="hidden lg:inline font-bold text-lg">{APP_TITLE}</span>
-        </Link>
+    <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-16 items-center flex-1 gap-4 justify-between">
 
-        {/* Location Selector */}
-        <div className="hidden sm:block">
-          <LocationSelector />
+        {/* Left Section: Logo & Location */}
+        <div className="flex items-center gap-4">
+          <Link href="/" className="flex items-center gap-2 flex-shrink-0">
+            <img src={APP_LOGO} alt={APP_TITLE} className="h-8 w-8 rounded" />
+            <span className="hidden lg:inline font-bold text-lg">{APP_TITLE}</span>
+          </Link>
+
+          <div className="hidden sm:block">
+            <LocationSelector />
+          </div>
         </div>
 
-        {/* Separator / Spacer */}
-        <div className="flex-1" />
+        {/* Center Section: Search Bar (New) */}
+        <div className="hidden md:flex flex-1 max-w-[420px] mx-4">
+          <div className="relative w-full">
+            <input
+              type="text"
+              placeholder="Buscar locales"
+              className="w-full h-10 pl-5 pr-12 rounded-full bg-muted/20 border-none focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm placeholder:text-muted-foreground/70"
+            />
+            <div className="absolute right-1 top-1 h-8 w-8 bg-primary rounded-full flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors">
+              <Search className="h-4 w-4 text-primary-foreground" />
+            </div>
+          </div>
+        </div>
 
-        {/* Navigation - Desktop Links */}
-        <nav className="hidden md:flex items-center gap-6 mr-4">
-          <Link href="/" className="text-sm font-medium hover:text-primary transition-colors">
-            Lojas
-          </Link>
-          <Link href="/history" className="text-sm font-medium hover:text-primary transition-colors">
-            Histórico
-          </Link>
-          <Link href="/coupons" className="text-sm font-medium hover:text-primary transition-colors">
-            Cupóns
-          </Link>
-        </nav>
-
-        {/* Actions Area */}
+        {/* Right Section: Actions & User */}
         <div className="flex items-center gap-2 sm:gap-4">
+
+          {/* Navigation Links (Desktop) - Reduced visibility to prioritize search */}
+          <nav className="hidden xl:flex items-center gap-6 mr-2">
+            <Link href="/" className="text-sm font-medium hover:text-primary transition-colors">
+              Lojas
+            </Link>
+            <Link href="/history" className="text-sm font-medium hover:text-primary transition-colors">
+              Histórico
+            </Link>
+            <Link href="/coupons" className="text-sm font-medium hover:text-primary transition-colors">
+              Cupóns
+            </Link>
+          </nav>
 
           <NotificationCenter />
 
           <Link href="/checkout" className="relative group">
-            <button className="relative inline-flex items-center gap-2 rounded-full bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity">
-              <ShoppingCart className="h-4 w-4" />
-              <span className="hidden sm:inline">Carrinho</span>
+            <button className="relative inline-flex items-center justify-center h-9 w-9 xl:w-auto xl:h-auto xl:px-3 xl:py-2 xl:gap-2 rounded-full hover:bg-accent transition-colors">
+              <ShoppingCart className="h-5 w-5 xl:h-4 xl:w-4" />
+              <span className="hidden xl:inline text-sm font-medium">Carrinho</span>
               {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs font-bold text-white shadow-sm ring-1 ring-background">
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 xl:h-5 xl:w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-white shadow-sm ring-1 ring-background">
                   {cartCount > 9 ? "9+" : cartCount}
                 </span>
               )}
@@ -100,15 +112,19 @@ export default function Header() {
             </div>
           )}
 
-          {user ? (
+          {user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.user_metadata?.avatar_url} alt={user.email} />
-                    <AvatarFallback>{user.email?.charAt(0).toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                </Button>
+                <div className="flex items-center gap-2 cursor-pointer hover:bg-accent/50 p-1.5 px-3 rounded-full transition-colors border border-transparent hover:border-border">
+                  <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
+                    <User className="h-5 w-5" />
+                  </div>
+                  <div className="hidden lg:flex flex-col items-start leading-none">
+                    <span className="text-sm font-medium">Mi Perfil</span>
+                    {/* Optional: Show minimal email or role if desired, keeping it clean for now as per print */}
+                  </div>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground hidden lg:block" />
+                </div>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
@@ -124,6 +140,9 @@ export default function Header() {
                   <Link href="/profile">Perfil</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
+                  <Link href="/history">Meus Pedidos</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
                   <Link href="/settings">Configurações</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -133,12 +152,12 @@ export default function Header() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          ) : null}
+          )}
 
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
-            className="rounded-full p-2 text-foreground/80 hover:bg-accent hover:text-foreground transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="rounded-full p-2 text-foreground/80 hover:bg-accent hover:text-foreground transition-all duration-300 hidden sm:block"
             aria-label="Alternar tema"
           >
             {theme === "dark" ? (
