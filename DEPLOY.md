@@ -107,9 +107,10 @@ Ideal se você quer CDN otimizada para o Frontend.
 
 1. No [Vercel](https://vercel.com), importe o projeto do GitHub.
 2. Nas configurações de **Build & Output Settings**:
-   - **Root Directory**: `client`
-   - **Build Command**: `pnpm build`
-   - **Output Directory**: `dist`
+   - **Framework Preset**: Vite
+   - **Root Directory**: `.` (Deixe vazio/padrão)
+   - **Build Command**: `npx vite build` (Compila apenas o Frontend)
+   - **Output Directory**: `dist/public` (Configurado no vite.config.ts)
    - **Install Command**: `pnpm install`
 3. Nas **Environment Variables**, adicione:
    - `VITE_SUPABASE_URL`: (Sua URL do Supabase)
