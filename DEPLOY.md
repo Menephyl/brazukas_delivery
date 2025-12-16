@@ -1,130 +1,39 @@
-# Guia de Deploy - Brazukas Delivery
+# Guia de Deploy - Brazukas Delivery Frontend (Vercel)
 
-Este projeto está configurado como uma **aplicação monolítica em Node.js**.
-O servidor Express (`server/`) serve tanto a API quanto os arquivos estáticos do Frontend React (`client/`) quando em produção.
+Seu objetivo atual é colocar o **Frontend** no ar usando o **Vercel**.
 
-## 🏗️ Fluxo de Build
+Como você **não tem um backend rodando** (cancelamos o Render), a solução é rodar o site em **Modo de Demonstração (Mocks)**. Isso significa que o site vai funcionar visualmente, você poderá navegar, adicionar itens ao carrinho, mas os dados não serão salvos num banco de dados real.
 
-1. **Frontend**: O Vite compila o React para arquivos estáticos em `dist/public`.
-2. **Backend**: O esbuild compila o servidor TypeScript para `dist/index.js`.
-3. **Produção**: O comando `npm start` roda o `dist/index.js`, que expõe a API e serve o HTML do frontend.
+## 🚀 Passo a Passo no Vercel
 
-## 🚀 Opção 1: Deploy com Docker (Recomendado - Easypanel/Railway/Render)
+1. **Acesse**: [https://vercel.com/new](https://vercel.com/new)
+2. **Importe**: Selecione seu repositório `brazukas_delivery`.
+3. **Configure o Projeto**:
 
-Crie um arquivo chamado `Dockerfile` na raiz do projeto com o seguinte conteúdo:
+   * **Framework Preset**: Vite (Deve detectar automático)
+   * **Root Directory**: `.` (Deixe o padrão)
+   * **Build Command**: `npx vite build` (Ou o padrão `vite build`)
+   * **Output Directory**: `dist/public` (⚠️ **Muito Importante**: Mude de `dist` para `dist/public`)
+   * **Install Command**: `pnpm install`
 
-```dockerfile
-# 1. Build Stage
-FROM node:20-alpine AS builder
-WORKDIR /app
+4. **Environment Variables** (Variáveis de Ambiente):
 
-# Instalar pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+   Adicione estas variáveis para que o site funcione sem backend:
 
-# Copiar arquivos de dependências
-COPY package.json pnpm-lock.yaml ./
-COPY client/package.json ./client/
+   | Nome | Valor | Descrição |
+   | :--- | :--- | :--- |
+   | `VITE_USE_MOCK` | `true` | **Essencial**. Ativa o modo sem backend. |
+   | `VITE_SUPABASE_URL` | `...` | Sua URL (opcional se usar mock total) |
+   | `VITE_SUPABASE_ANON_KEY` | `...` | Sua Key (opcional se usar mock total) |
 
-# Instalar dependências
-RUN pnpm install --frozen-lockfile
+5. **Deploy**: Clique em **Deploy**.
 
-# Copiar todo o código fonte
-COPY . .
+## 🔄 Solução de Problemas
 
-# Construir o projeto (Frontend + Backend)
-RUN pnpm build
+### 404 ao recarregar a página
 
-# 2. Production Stage
-FROM node:20-alpine AS runner
-WORKDIR /app
+Se você entrar em `/checkout` e der refresh e aparecer "404 Not Found", certifique-se de que o arquivo `vercel.json` está na raiz do projeto com o conteúdo que criamos.
 
-# Instalar pnpm para rodar scripts se necessário (opcional, pois usaremos node direto)
-# RUN corepack enable && corepack prepare pnpm@latest --activate
+### Site não carrega produtos
 
-# Definir NODE_ENV para produção
-ENV NODE_ENV=production
-
-# Copiar apenas os arquivos construídos e dependências de produção
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
-
-# Expor a porta 3000
-EXPOSE 3000
-
-# Comando de inicialização
-CMD ["node", "dist/index.js"]
-```
-
-### Configuração no Easypanel / Portainer / Railway
-
-1. **Source**: Conecte seu repositório GitHub.
-2. **Build Path**: Raiz (`/`).
-3. **Porta**: 3000.
-4. **Environment Variables**: Configure as variáveis abaixo.
-
-## 🔑 Variáveis de Ambiente (Produção)
-
-Configure estas variáveis no seu painel de hospedagem:
-
-```env
-# Servidor
-NODE_ENV=production
-PORT=3000
-
-# Banco de Dados (Supabase Transaction Pooler é recomendado)
-DATABASE_URL=postgres://postgres:[SENHA]@[HOST]:6543/postgres?pgbouncer=true
-
-# Supabase (Auth & Realtime)
-VITE_SUPABASE_URL=https://[ID-DO-PROJETO].supabase.co
-VITE_SUPABASE_ANON_KEY=[SUA-CHAVE-ANON-PUBLICA]
-
-# Autenticação (JWT)
-# Gere uma string aleatória longa para assinar tokens internos se houver
-JWT_SECRET=[STRING-ALEATORIA-SEGURA]
-
-# URLs da Aplicação (Para CORS e Redirecionamentos)
-APP_URL=https://seu-dominio-de-producao.com
-```
-
-## ☁️ Opção 2: Deploy no Render (Automático)
-
-Esta é a opção mais fácil. O projeto já inclui um arquivo `render.yaml`.
-
-1. Crie uma conta no [Render.com](https://render.com).
-2. Vá em **Blueprints** > **New Blueprint Instance**.
-3. Conecte seu repositório GitHub.
-4. O Render vai detectar automaticamente o arquivo `render.yaml` e pedir as variáveis de ambiente.
-5. Preencha as variáveis (`DATABASE_URL`, `VITE_SUPABASE_URL`, etc).
-6. Clique em **Apply**.
-
-O Render vai rodar o build (`pnpm install && pnpm build`) e iniciar o servidor (`pnpm start`) automaticamente.
-
-## ⚡ Opção 3: Deploy Frontend no Vercel (Híbrido)
-
-Ideal se você quer CDN otimizada para o Frontend.
-**Nota**: O Backend AINDA PRECISARÁ estar rodando em algum lugar (Opção 1 ou 2).
-
-1. No [Vercel](https://vercel.com), importe o projeto do GitHub.
-2. Nas configurações de **Build & Output Settings**:
-   - **Framework Preset**: Vite
-   - **Root Directory**: `.` (Deixe vazio/padrão)
-   - **Build Command**: `npx vite build` (Compila apenas o Frontend)
-   - **Output Directory**: `dist/public` (Configurado no vite.config.ts)
-   - **Install Command**: `pnpm install`
-3. Nas **Environment Variables**, adicione:
-   - `VITE_SUPABASE_URL`: (Sua URL do Supabase)
-   - `VITE_SUPABASE_ANON_KEY`: (Sua chave Anon)
-   - `VITE_API_BASE_URL`: **URL completa do seu backend** (ex: `https://brazukas-backend.onrender.com`)
-
-Dessa forma, o Frontend roda no Vercel e consome a API do seu backend no Render.
-
-## 🖥️ Opção 4: Deploy Manual (VPS / Node.js)
-
-Se você tem um servidor Linux com Node.js instalado:
-
-1. Clone o repositório.
-2. `pnpm install`
-3. Certifique-se de que o `.env` de produção está configurado.
-4. `pnpm build`
-5. `pnpm start` (Recomendado usar PM2: `pm2 start dist/index.js --name brazukas`)
+Verifique se `VITE_USE_MOCK` está setado como `true`. Sem backend e sem mock, o site vai tentar chamar uma API que não existe.
