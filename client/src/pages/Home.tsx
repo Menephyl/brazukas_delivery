@@ -5,8 +5,9 @@ import Footer from "@/components/Footer";
 import StoreCard from "@/components/StoreCard";
 import SearchBar from "@/components/SearchBar";
 import FilterPanel from "@/components/FilterPanel";
-import { MapPin, Zap, Filter } from "lucide-react";
+import { MapPin, Zap, Filter, ChevronDown } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { MobileHeader } from "@/components/mobile/MobileHeader";
 import { MobileNav } from "@/components/mobile/MobileNav";
 import { CategoryList } from "@/components/mobile/CategoryList";
@@ -17,6 +18,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(3);
 
   useEffect(() => {
     fetchMerchants()
@@ -32,6 +34,7 @@ export default function Home() {
       (m.descricao && m.descricao.toLowerCase().includes(searchQuery.toLowerCase()))
     );
     setFilteredMerchants(filtered);
+    setVisibleCount(6);
   }, [searchQuery, merchants]);
 
   return (
@@ -124,11 +127,27 @@ export default function Home() {
                   ))}
                 </div>
               ) : filteredMerchants.length > 0 ? (
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                  {filteredMerchants.map((merchant) => (
-                    <StoreCard key={merchant.id} store={merchant} />
-                  ))}
-                </div>
+                <>
+                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {filteredMerchants.slice(0, visibleCount).map((merchant) => (
+                      <StoreCard key={merchant.id} store={merchant} />
+                    ))}
+                  </div>
+
+                  {visibleCount < filteredMerchants.length && (
+                    <div className="mt-8 flex justify-center">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="rounded-full h-12 w-12 border border-border hover:bg-muted"
+                        onClick={() => setVisibleCount(prev => prev + 6)}
+                        title="Ver mais"
+                      >
+                        <ChevronDown className="h-6 w-6" />
+                      </Button>
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="rounded-2xl border border-dashed border-border p-12 text-center">
                   <p className="text-muted-foreground">
